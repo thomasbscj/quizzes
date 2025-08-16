@@ -1,5 +1,5 @@
 import { Pool } from "pg"
-import dotenv from "dotenv"
+import * as dotenv from "dotenv"
 
 dotenv.config()
 
@@ -16,7 +16,6 @@ async function initPG(){
 
         CREATE TABLE IF NOT EXISTS quizzes (
         id SERIAL PRIMARY KEY,
-        title TEXT NOT NULL,
         title TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT NOW()
         );
