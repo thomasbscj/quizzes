@@ -2,33 +2,40 @@ import { Pool } from "pg";
 import pool from "../postgre.connect";
 
 export interface QuestionInput {
-  question: string
-  type: string
-  options?: any[]
+    question: string
+    type: string
+    options?: string[] // CORRIGIDO: mais específico
 }
 
 export interface QuizInput {
-  title: string
-  questions: QuestionInput[]
+    title: string
+    questions: QuestionInput[]
 }
 
-export async function createQuiz(quiz : QuizInput) : Promise<any>{
-    try{
+export async function createQuiz(quiz: QuizInput): Promise<any> {
+    try {
         await pool.query("BEGIN")
-        let quizResult = await pool.query(
+        
+        const quizResult = await pool.query(
             "INSERT INTO quizzes (title) VALUES ($1) RETURNING id",
             [quiz.title]
         )
-        let  quizId = quizResult.rows[0].id;
-        for (let q of quiz.questions) {
+        const quizId = quizResult.rows[0].id;
+
+        // CORRIGIDO: Usar for...of para melhor tratamento de async
+        for (const [index, q] of quiz.questions.entries()) {
             await pool.query(
-            "INSERT INTO questions (quiz_id, question, type, options) VALUES ($1, $2, $3, $4)",
-            [quizId, q.question, q.type, q.options ? JSON.stringify(q.options) : null]
-        )
-    }
+                "INSERT INTO questions (quiz_id, question, type, options, position) VALUES ($1, $2, $3, $4, $5)",
+                [quizId, q.question, q.type, q.options ? JSON.stringify(q.options) : null, index]
+            )
+        }
+        
         await pool.query("COMMIT")
-    }catch(err){
-        pool.query("ROLLBACK")
-        return err
+        return { success: true, quizId }; // CORRIGIDO: retorno consistente
+        
+    } catch (err) {
+        await pool.query("ROLLBACK") // CORRIGIDO: await no rollback
+        console.error("Error creating quiz:", err);
+        throw err; // CORRIGIDO: throw em vez de return
     }
 }

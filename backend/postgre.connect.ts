@@ -11,31 +11,30 @@ const pool = new Pool({
     database: process.env.DATABASE,
 })
 
-async function initPG(){
-    await pool.query(`
+async function initPG() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS quizzes (
+                id SERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
 
-        CREATE TABLE IF NOT EXISTS quizzes (
-        id SERIAL PRIMARY KEY,
-        title TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-        );
-
-        CREATE TABLE IF NOT EXISTS questions (
-        id SERIAL PRIMARY KEY,
-        quiz_id INT NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
-        question_text TEXT NOT NULL,
-        question_type TEXT NOT NULL, 
-        position INT
-        );
-
-        CREATE TABLE IF NOT EXISTS choices (
-        id SERIAL PRIMARY KEY,
-        question_id INT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
-        choice_text TEXT NOT NULL,
-        is_correct BOOLEAN DEFAULT FALSE
-        );
-
-    `)
+            CREATE TABLE IF NOT EXISTS questions (
+                id SERIAL PRIMARY KEY,
+                quiz_id INT NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+                question TEXT NOT NULL,  -- CORRIGIDO: era question_text
+                type TEXT NOT NULL,      -- CORRIGIDO: era question_type  
+                options JSONB,           -- CORRIGIDO: usar JSONB em vez de posição
+                position INT DEFAULT 0
+            );
+        `);
+        
+        console.log("Database tables created/verified successfully");
+    } catch (error) {
+        console.error("Error creating database tables:", error);
+        throw error;
+    }
 }
 
 export { initPG }
